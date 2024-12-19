@@ -1,0 +1,457 @@
+<html>
+<head>
+  <base href="/">
+  <title>Looping Words Animation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --color-neutral-300: #f5f5f5;
+      --color-neutral-400: #e5e5e5;
+      --color-neutral-500: #737373;
+      --color-primary: #0000FF; 
+      --color-dark: #000000;
+      --size-font: 16px;
+      --container-padding: 20px;
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--color-neutral-300);
+      color: var(--color-dark);
+      font-size: var(--size-font);
+    }
+
+    .cloneable {
+      padding: var(--container-padding);
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      display: flex;
+      position: relative;
+      flex-direction: column;
+    }
+
+    .looping-words {
+      height: 2em;
+      padding-left: .1em;
+      padding-right: .1em;
+      font-size: clamp(32px, 11vw, 96px);
+      line-height: .9;
+      position: relative;
+    }
+
+    .looping-words__list {
+      text-align: center;
+      text-transform: none; 
+      white-space: nowrap;
+      flex-flow: column;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif; 
+      font-weight: 700;
+      list-style: none;
+      display: flex;
+      position: relative;
+    }
+
+    .looping-words__list.is--primary {
+      color: var(--color-primary);
+    }
+
+    .looping-words__list.is--gray {
+      color: var(--color-neutral-500);
+    }
+
+    .looping-words__fade {
+      background-image: linear-gradient(180deg, var(--color-neutral-300) 5%, transparent 40%, transparent 60%, var(--color-neutral-300) 95%);
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .looping-words__fade.is--radial {
+      background-image: radial-gradient(circle closest-side at 50% 50%, transparent 64%, var(--color-neutral-400) 93%);
+      width: 140%;
+      display: block;
+      left: -20%;
+    }
+
+    .looping-words__selector {
+      pointer-events: none;
+      width: 100%;
+      height: .9em;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .looping-words__edge {
+      border-top: .035em solid var(--color-primary);
+      border-left: .035em solid var(--color-primary);
+      width: .125em;
+      height: .125em;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .looping-words__edge.is--2 {
+      left: auto;
+      right: 0;
+      transform: rotate(90deg);
+    }
+
+    .looping-words__edge.is--3 {
+      inset: auto 0 0 auto;
+      transform: rotate(180deg);
+    }
+
+    .looping-words__edge.is--4 {
+      top: auto;
+      bottom: 0;
+      transform: rotate(270deg);
+    }
+
+    .looping-words__containers {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .looping-words__p {
+      margin: 0;
+    }
+
+    .action-button, .choice-button {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(16px, 4vw, 24px);
+      font-weight: 700;
+      color: white;
+      background-color: var(--color-primary);
+      padding: 12px 24px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .action-button {
+      opacity: 0;
+      transform: translateY(20px);
+      position: absolute;
+      top: 50%;  
+      left: 50%;  
+      transform: translate(-50%, -50%);
+    }
+
+    .choice-container {
+      display: none;
+      gap: 20px;
+      opacity: 0;
+      transform: translateY(20px);
+      flex-direction: column;
+      width: 90%;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    .choice-button:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 5px 15px rgba(0, 0, 255, 0.3);
+    }
+
+    .action-button:hover {
+      transform: translate(-50%, -55%) scale(1.05);  
+      box-shadow: 0 5px 15px rgba(0, 0, 255, 0.3);
+    }
+
+    .action-button:hover::after {
+      content: "Hey!";
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(12px, 2vw, 16px);
+      color: var(--color-primary);
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-container {
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+
+    .loading-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .poem-container {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 1.5em;
+      border-radius: 15px;
+      box-shadow: 0 5px 25px rgba(0, 0, 255, 0.2);
+      max-width: 500px;
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+      animation: fadeIn 0.5s ease-out;
+      width: 90%;
+    }
+
+    .poem-text {
+      font-size: clamp(14px, 3vw, 24px);
+      line-height: 1.4;
+      margin-bottom: 20px;
+      color: var(--color-dark);
+    }
+
+    .close-button {
+      background-color: var(--color-primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      transition: all 0.3s ease;
+    }
+
+    .close-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 3px 10px rgba(0, 0, 255, 0.2);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .cloneable {
+        padding: 10px;
+      }
+
+      .choice-button {
+        width: 100%;
+      }
+
+      .poem-container {
+        padding: 1em;
+      }
+
+      .close-button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700&amp;display=swap" rel="stylesheet">
+</head>
+<body>
+  <section class="cloneable">
+    <div class="loading-container">
+      <div class="looping-words">
+        <div class="looping-words__containers">
+          <ul data-looping-words-list class="looping-words__list">
+            <li class="looping-words__list">
+              <p class="looping-words__p">Loading</p>
+            </li>
+            <li class="looping-words__list">
+              <p class="looping-words__p">Cargando</p>
+            </li>
+            <li class="looping-words__list">
+              <p class="looping-words__p">Chargement</p>
+            </li>
+            <li class="looping-words__list">
+              <p class="looping-words__p">&#x8aad;&#x307f;&#x8fbc;&#x307f;&#x4e2d;</p>
+            </li>
+            <li class="looping-words__list">
+              <p class="looping-words__p">Laden</p>
+            </li>
+            <li class="looping-words__list">
+              <p class="looping-words__p">Carregando</p>
+            </li>
+            <li class="looping-words__list">
+              <p class="looping-words__p">&#x52a0;&#x8f7d;&#x4e2d;</p>
+            </li>
+            <li class="looping-words__list">
+              <p class="looping-words__p">&#x417;&#x430;&#x433;&#x440;&#x443;&#x437;&#x43a;&#x430;</p>
+            </li>
+          </ul>
+        </div>
+        <div class="looping-words__fade"></div>
+        <div data-looping-words-selector class="looping-words__selector">
+          <div class="looping-words__edge"></div>
+          <div class="looping-words__edge is--2"></div>
+          <div class="looping-words__edge is--3"></div>
+          <div class="looping-words__edge is--4"></div>
+        </div>
+      </div>
+    </div>
+    <button class="action-button">Hey, click me! :)</button>
+    <div class="choice-container">
+      <button class="choice-button">Dad</button>
+      <button class="choice-button">Byron</button>
+    </div>
+    
+    <div id="dadPoem" class="poem-container">
+      <div class="poem-text">
+        Dear Dad,<br><br>
+        In your strength and gentle care,<br>
+        A love that&apos;s always been there.<br>
+        Through ups and downs, year after year,<br>
+        Your guidance keeps me always near.<br><br>
+        Your wisdom lights my darkest days,<br>
+        Your smile brightens all my ways.<br>
+        For everything you&apos;ve done for me,<br>
+        You&apos;re the best dad there could be.<br>
+      </div>
+      <button class="close-button">Close</button>
+    </div>
+    
+    <div id="byronPoem" class="poem-container">
+      <div class="poem-text">
+        Dear Byron, my brother,<br><br>
+        More than just family, you&apos;re my friend,<br>
+        A bond that will never end.<br>
+        Through childhood games and growing years,<br>
+        Sharing laughter, joy, and tears.<br><br>
+        You&apos;re the best brother one could ask for,<br>
+        Our friendship I&apos;ll always treasure more.<br>
+        Thank you for being who you are,<br>
+        My brother, my friend, my guiding star.<br>
+      </div>
+      <button class="close-button">Close</button>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script>document.addEventListener('DOMContentLoaded', function () {
+  const wordList = document.querySelector('[data-looping-words-list]');
+  const words = Array.from(wordList.children);
+  const totalWords = words.length;
+  const wordHeight = 100 / totalWords;
+  const edgeElement = document.querySelector('[data-looping-words-selector]');
+  let currentIndex = 0;
+  function updateEdgeWidth() {
+    const centerIndex = (currentIndex + 1) % totalWords;
+    const centerWord = words[centerIndex];
+    const centerWordWidth = centerWord.getBoundingClientRect().width;
+    const listWidth = wordList.getBoundingClientRect().width;
+    const percentageWidth = centerWordWidth / listWidth * 100;
+    gsap.to(edgeElement, {
+      width: `${percentageWidth}%`,
+      duration: 0.5,
+      ease: 'Expo.easeOut'
+    });
+  }
+  function moveWords() {
+    currentIndex++;
+    gsap.to(wordList, {
+      yPercent: -wordHeight * currentIndex,
+      duration: 1.2,
+      ease: 'elastic.out(1, 0.85)',
+      onStart: updateEdgeWidth,
+      onComplete: function () {
+        if (currentIndex >= totalWords - 3) {
+          wordList.appendChild(wordList.children[0]);
+          currentIndex--;
+          gsap.set(wordList, {
+            yPercent: -wordHeight * currentIndex
+          });
+          words.push(words.shift());
+        }
+      }
+    });
+  }
+  updateEdgeWidth();
+  const timeline = gsap.timeline({
+    repeat: -1,
+    delay: 1
+  }).call(moveWords).to({}, {
+    duration: 2
+  }).repeat(-1);
+  setTimeout(() => {
+    timeline.kill();
+    const loadingContainer = document.querySelector('.loading-container');
+    const actionButton = document.querySelector('.action-button');
+    gsap.to(loadingContainer, {
+      opacity: 0,
+      duration: 0.5,
+      onComplete: () => {
+        loadingContainer.classList.add('hidden');
+        gsap.to(actionButton, {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out"
+        });
+      }
+    });
+  }, 10000);
+  const actionButton = document.querySelector('.action-button');
+  const choiceContainer = document.querySelector('.choice-container');
+  const choiceButtons = document.querySelectorAll('.choice-button');
+  const dadPoem = document.getElementById('dadPoem');
+  const byronPoem = document.getElementById('byronPoem');
+  const closeButtons = document.querySelectorAll('.close-button');
+  actionButton.addEventListener('click', () => {
+    actionButton.style.display = 'none';
+    choiceContainer.style.display = 'flex';
+    gsap.to(choiceContainer, {
+      opacity: 1,
+      y: 0,
+      duration: 0.8,
+      ease: "power2.out"
+    });
+  });
+  choiceButtons.forEach(button => {
+    button.addEventListener('click', e => {
+      const poemToShow = e.target.textContent === 'Dad' ? dadPoem : byronPoem;
+      poemToShow.style.display = 'block';
+    });
+  });
+  closeButtons.forEach(button => {
+    button.addEventListener('click', e => {
+      e.target.parentElement.style.display = 'none';
+    });
+  });
+  const addTouchListeners = element => {
+    element.addEventListener('touchstart', () => {
+      gsap.to(element, {
+        scale: 0.95,
+        duration: 0.1
+      });
+    });
+    element.addEventListener('touchend', () => {
+      gsap.to(element, {
+        scale: 1,
+        duration: 0.1
+      });
+    });
+  };
+  const buttons = document.querySelectorAll('.action-button, .choice-button, .close-button');
+  buttons.forEach(button => addTouchListeners(button));
+});</script>
+</body>
+</html>
